@@ -5,6 +5,7 @@ X = 200
 Y = 100
 mode = False
 #ищет два вектора цвета в квадратике(это буквально квадрат)
+#ngngn
 def find_all_colors(img):
     min_color = [255, 255, 255]
     max_color = [0, 0, 0]
