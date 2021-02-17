@@ -40,7 +40,7 @@ def find_point(img, min_color, max_color):
             # ind = np.where(min_color <= img[i][j] <= max_color)
             # k = (min_color <= img[i][j] <= max_color)
 
-            if ((subtract_vectors(img[i][j], min_color)) >= -100) and ((subtract_vectors(max_color, img[i][j])) >= -100):
+            if ((subtract_vectors(img[i][j], min_color)) >= 0) and ((subtract_vectors(max_color, img[i][j])) >= -100):
 
                 return i,j
     return -1,-1
@@ -71,7 +71,7 @@ while True:
         if f== 1:
             mode = True
     if (mode):
-        #тут надо найти маркер (квардатик size x size, точку) я думаю на сетке. Там вроде алгоритмы есть, но читать книжку на 700 стр я не собираюсь. да и та бесполезна, если смотреть на содержание
+        #тут надо найти маркер (квардатик size x size, точку) я думаю на сетке
         x,y = find_point(img,min_color, max_color) #возвращает какую-то точку на сетке, т.е. надо ещё сам квадрат-маркер найти и усреднить координату
         print(x,y)
         x_vec.append(x)
