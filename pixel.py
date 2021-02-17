@@ -49,7 +49,7 @@ cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 x_vec = []
 y_vec = []
 min_color = [255, 255, 255]
-    max_color = [0, 0, 0]
+max_color = [0, 0, 0]
 f = 0
 while True:
     ret, img = cap.read()
@@ -62,16 +62,16 @@ while True:
         img = cv2.rectangle(img, start_point, end_point, color, thickness)
 
     # here something like: "place the item(?) in the circle and qlick "q""//To define a marker//что-то типа калибровки, но как это в КЗ называется - пас
-    if cv2.waitKey(10) == ord('q'):#на самом деле я просто других укв не знаю//посмотреть другие буквы//возможно стоит калибровать на нескольких кадрах, там даже так погрешность большая что-то
+    if cv2.waitKey(10) == ord('a'):#на самом деле я просто других укв не знаю//посмотреть другие буквы//возможно стоит калибровать на нескольких кадрах, там даже так погрешность большая что-то
         #тут надо найти максимальную разность цветов//вернуть 2 RGB
         min_color1, max_color1 = find_all_colors(img)
         min_color = find_min_coomp(min_color,min_color1)
         max_color = find_max_coomp(max_color,max_color1)
         f+=1
-        if f== 4:
+        if f== 1:
             mode = True
     if (mode):
-        #тут надо найти маркер (квардатик size x size, точку) я думаю на сетке
+        #тут надо найти маркер (квардатик size x size, точку) я думаю на сетке. Там вроде алгоритмы есть, но читать книжку на 700 стр я не собираюсь. да и та бесполезна, если смотреть на содержание
         x,y = find_point(img,min_color, max_color) #возвращает какую-то точку на сетке, т.е. надо ещё сам квадрат-маркер найти и усреднить координату
         print(x,y)
         x_vec.append(x)
