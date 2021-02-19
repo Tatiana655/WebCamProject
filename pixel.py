@@ -34,13 +34,13 @@ def find_all_colors(img):
 
 #ищет точку(пиксель)
 def find_point(img, min_color, max_color):
-    for i in range(len(img) // (size // 15)):  # y
-        for j in range(len(img[0]) // (size // 15)):  # x
+    for i in range(len(img)):  # y
+        for j in range(len(img[0])):  # x
             # может и тут какой-то питоновский трюк можно провернуть, то что ниже в комментах не работает. Я пыталась сравнить два массива по-быстрому
             # ind = np.where(min_color <= img[i][j] <= max_color)
             # k = (min_color <= img[i][j] <= max_color)
 
-            if ((subtract_vectors(img[i][j], min_color)) >= 0) and ((subtract_vectors(max_color, img[i][j])) >= -100):
+            if ((subtract_vectors(img[i][j], min_color)) >= -10) and ((subtract_vectors(max_color, img[i][j])) >= -10):
 
                 return i,j
     return -1,-1
@@ -68,12 +68,12 @@ while True:
         min_color = find_min_coomp(min_color,min_color1)
         max_color = find_max_coomp(max_color,max_color1)
         f+=1
-        if f== 1:
+        if f == 4:
             mode = True
     if (mode):
-        #тут надо найти маркер (квардатик size x size, точку) я думаю на сетке
+        #тут надо найти маркер (квардатик size x size, точку) я думаю на сетке. Там вроде алгоритмы есть, но читать книжку на 700 стр я не собираюсь. да и та бесполезна, если смотреть на содержание
         x,y = find_point(img,min_color, max_color) #возвращает какую-то точку на сетке, т.е. надо ещё сам квадрат-маркер найти и усреднить координату
-        print(x,y)
+        #print(x,y)
         x_vec.append(x)
         y_vec.append(y)
         for i in range(1,len(x_vec)):
