@@ -4,7 +4,7 @@ size = 20
 X = 200
 Y = 100
 mode = False
-
+delt = 0
 
 def find_min_coomp(vec1, vec2):
     for i in range(len(vec1)):
@@ -29,21 +29,13 @@ def find_all_colors(img):
         for j in range(X, X + size):
             for k in range(3):
                 min_color[k] = min(img[i][j][k], min_color[k])
+                if min_color[k]>=delt:
+                    min_color[k] -= delt
                 max_color[k] = max(img[i][j][k], min_color[k])
+                if max_color[k] <=255-delt:
+                    max_color[k]+=delt;
     return min_color, max_color
 
-#ищет точку(пиксель)
-def find_point(img, min_color, max_color):
-    for i in range(len(img)):  # y
-        for j in range(len(img[0])):  # x
-            # может и тут какой-то питоновский трюк можно провернуть, то что ниже в комментах не работает. Я пыталась сравнить два массива по-быстрому
-            # ind = np.where(min_color <= img[i][j] <= max_color)
-            # k = (min_color <= img[i][j] <= max_color)
-
-            if ((subtract_vectors(img[i][j], min_color)) >= -10) and ((subtract_vectors(max_color, img[i][j])) >= -10):
-
-                return i,j
-    return -1,-1
 
 cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 x_vec = []
@@ -53,6 +45,10 @@ max_color = [0, 0, 0]
 f = 0
 ret, img = cap.read()
 r1 = np.zeros_like(img)
+
+kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(10,10))
+fgbg = cv2.createBackgroundSubtractorKNN(50, 200.0, False)
+
 while True:
     ret, img = cap.read()
     img = cv2.flip(img, 1)
@@ -62,7 +58,7 @@ while True:
     thickness = 1
     if mode == False:
         img = cv2.rectangle(img, start_point, end_point, color, thickness)
-        cv2.imshow("Cam", img)
+        cv2.imshow("WM", img)
 
     # here something like: "place the item(?) in the circle and qlick "q""//To define a marker//что-то типа калибровки, но как это в КЗ называется - пас
     if cv2.waitKey(10) == ord('a'):#на самом деле я просто других укв не знаю//посмотреть другие буквы//возможно стоит калибровать на нескольких кадрах, там даже так погрешность большая что-то
@@ -82,12 +78,14 @@ while True:
 
         r1 = cv2.add(r1,cv2.bitwise_and(img, img, mask=m1))
 
+        fgmask = fgbg.apply(r1)
+        fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, kernel)
 
         cv2.imshow("WM", np.hstack([img, r1]))
     #cv2.imshow("Cam", img)
     if cv2.waitKey(10) == 27: # Клавиша Esc
         break
-    if  not cv2.getWindowProperty('Cam', 0) >= 0:
+    if not cv2.getWindowProperty('WM', 0) >= 0: #крестик
         break
 
 cap.release()
