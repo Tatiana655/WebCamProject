@@ -44,7 +44,11 @@ min_color = [255, 255, 255]
 max_color = [0, 0, 0]
 f = 0
 ret, img = cap.read()
-r1 = np.zeros_like(img)
+Marker = np.zeros_like(img)
+Point = np.zeros_like(img)
+
+mask = np.zeros_like(img)
+mask = cv2.flip(mask, 1)
 
 kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(10,10))
 fgbg = cv2.createBackgroundSubtractorKNN(50, 200.0, False)
@@ -52,10 +56,12 @@ fgbg = cv2.createBackgroundSubtractorKNN(50, 200.0, False)
 while True:
     ret, img = cap.read()
     img = cv2.flip(img, 1)
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     start_point = (X-1, Y-1)
     end_point = (X + size+1, Y + size+1)
     color = (255, 0, 0)
     thickness = 1
+    Marker = np.zeros_like(img)
     if mode == False:
         img = cv2.rectangle(img, start_point, end_point, color, thickness)
         cv2.imshow("WM", img)
@@ -74,14 +80,33 @@ while True:
         L1 = np.array(min_color)
         U1 = np.array(max_color)
 
+        hsv_min = np.array(min_color, np.uint8)
+        hsv_max = np.array(max_color, np.uint8)
+
+        thresh = cv2.inRange(hsv, hsv_min, hsv_max)
         m1 = cv2.inRange(img, L1, U1)
+        #user reqaierment
+        Marker = cv2.add(Marker, cv2.bitwise_and(img, img, mask=m1))
+        #hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        #gray_image = cv2.cvtColor(m1, cv2.COLOR_BGR2GRAY)
+        moments = cv2.moments(m1, 1)
+        dM01 = moments['m01']
+        dM10 = moments['m10']
+        dArea = moments['m00']
 
-        r1 = cv2.add(r1,cv2.bitwise_and(img, img, mask=m1))
-
-        fgmask = fgbg.apply(r1)
+        if dArea > 5:
+            x = int(dM10 / dArea)
+            y = int(dM01 / dArea)
+            mask = cv2.circle(mask, (x, y), 5, (50, 100, 255), -1)
+            Point = cv2.add(Point, mask)
+        #обработка изображения с маркером, современная обработка изображений
+        #ик камера
+        #обмен симвоолами, первый спринт + документация алгоритмов. как выбирать алг, фильтры
+        #linka, ,kfujhjlyfz wtkm ? или развлекалово
+        fgmask = fgbg.apply(Marker)
         fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, kernel)
 
-        cv2.imshow("WM", np.hstack([img, r1]))
+        cv2.imshow("WM", np.hstack([img, Marker, Point]))
     #cv2.imshow("Cam", img)
     if cv2.waitKey(10) == 27: # Клавиша Esc
         break
@@ -90,4 +115,3 @@ while True:
 
 cap.release()
 cv2.destroyAllWindows()
-
