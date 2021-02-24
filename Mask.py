@@ -113,5 +113,6 @@ while True:
     if not cv2.getWindowProperty('WM', 0) >= 0: #крестик
         break
 
+        
 cap.release()
 cv2.destroyAllWindows()
