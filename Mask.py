@@ -87,6 +87,8 @@ while True:
         m1 = cv2.inRange(img, L1, U1)
         #user reqaierment
         Marker = cv2.add(Marker, cv2.bitwise_and(img, img, mask=m1))
+        kernel1 = np.ones((2, 2), np.float32) / 25
+        Marker = cv2.medianBlur(Marker, 15)
         #hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         #gray_image = cv2.cvtColor(m1, cv2.COLOR_BGR2GRAY)
         moments = cv2.moments(m1, 1)
@@ -113,6 +115,5 @@ while True:
     if not cv2.getWindowProperty('WM', 0) >= 0: #крестик
         break
 
-        
 cap.release()
 cv2.destroyAllWindows()
