@@ -44,7 +44,7 @@ def find_all_colors(img):
     return min_color, max_color
 
 def Scrolls(cap, min_color, max_color): #вствить выбор фильтра
-    cv2.namedWindow("result")  # создаем главное окно
+    #cv2.namedWindow("settings")  # создаем главное окно
     cv2.namedWindow("settings")  # создаем окно настроек
 
     # создаем 6 бегунков для настройки начального и конечного цвета фильтра
@@ -55,7 +55,8 @@ def Scrolls(cap, min_color, max_color): #вствить выбор фильтр�
     cv2.createTrackbar('g_max', 'settings', max_color[1], 255, lambda x:x)
     cv2.createTrackbar('b_max', 'settings', max_color[2], 255, lambda x:x)
 
-    cv2.createTrackbar('blur_coef', 'settings', 5, 50, lambda x: x )
+    cv2.createTrackbar('filter_type', 'settings', 0, 2, lambda x: x)
+    cv2.createTrackbar('blur_coef', 'settings', 7, 50, lambda x: x )
 
     while True:
         flag, imgtmp = cap.read()
@@ -69,23 +70,30 @@ def Scrolls(cap, min_color, max_color): #вствить выбор фильтр�
         s2 = cv2.getTrackbarPos('g_max', 'settings')
         v2 = cv2.getTrackbarPos('b_max', 'settings')
 
+        filter_type = cv2.getTrackbarPos('filter_type', 'settings') #мб тут что-то вроде енамов добавить или сета
         pixel_size = cv2.getTrackbarPos('blur_coef', 'settings')
+
         # формируем начальный и конечный цвет фильтра
         h_min = np.array((h1, s1, v1))
         h_max = np.array((h2, s2, v2))
 
         # накладываем фильтр на кадр
         filter = cv2.inRange(imgtmp, h_min, h_max)
-        filter = cv2.medianBlur(filter, 2*pixel_size+1) #cv2.GaussianBlur(filter, (11, 11), 0)#cv2.blur(filter, (11, 11))#cv2.medianBlur(filter, 15)
+        if filter_type == 0:
+            filter = cv2.medianBlur(filter, 2*pixel_size+1) #cv2.GaussianBlur(filter, (11, 11), 0)#cv2.blur(filter, (11, 11))#cv2.medianBlur(filter, 15)
+        if filter_type == 1:
+            filter = cv2.GaussianBlur(filter, (2*pixel_size+1, 2*pixel_size+1), 0)
+        if filter_type == 2:
+            filter = cv2.blur(filter, (2*pixel_size+1, 2*pixel_size+1))
         trash = cv2.add(trash, cv2.bitwise_and(imgtmp, imgtmp, mask=filter))
 
-        cv2.imshow('result', np.hstack([imgtmp, trash]))
+        cv2.imshow('settings', np.hstack([imgtmp, trash]))
 
         ch = cv2.waitKey(5)
         if ch == 27:# wait for ESC key to exit|| хорошо бы "OK" найти какой-нибудь
-            cv2.destroyWindow("result")
+            #cv2.destroyWindow("result")
             cv2.destroyWindow("settings")
-            return [h1, s1, v1], [h2, s2, v2], [2*pixel_size+1]
+            return [h1, s1, v1], [h2, s2, v2], [2*pixel_size+1, filter_type]
 
 # это хорошо бы в мейн
 cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
@@ -128,7 +136,7 @@ while True:
         if count_col == 3:
             mode = True
             # бегунки после калибровки для проверки тцут
-            min_color, max_color, pixel_size = Scrolls(cap, min_color, max_color)
+            min_color, max_color, filter_opt = Scrolls(cap, min_color, max_color)
 
     # режим рисования
     if mode:
@@ -144,9 +152,14 @@ while True:
         # где соседние пиксели, которые ближе к центральному пикселю, вносят больший «вклад» в среднее. Конечным результатом является то, что наше изображение размыто более естественно
 
         #В медианном размытии центральный пиксель изображения заменяется медианой всех пикселей в области ядра, в результате чего это размытие наиболее эффективно при удалении шума в стиле «соли».
-
-
-        m1 = cv2.medianBlur(m1, pixel_size[0]) #cv2.GaussianBlur(m1, (11, 11), 0)#cv2.blur(m1, (11, 11))#
+#написать нормально (-_-)
+        if filter_opt[1] == 0:
+            m1 = cv2.medianBlur(m1, filter_opt[0]) #cv2.GaussianBlur(filter, (11, 11), 0)#cv2.blur(filter, (11, 11))#cv2.medianBlur(filter, 15)
+        if filter_opt[1] == 1:
+            m1 = cv2.GaussianBlur(m1, (filter_opt[0], filter_opt[0]), 0)
+        if filter_opt[1] == 2:
+            m1 = cv2.blur(m1, (filter_opt[0], filter_opt[0]))
+        #m1 = cv2.medianBlur(m1, filter_opt[0]) #cv2.GaussianBlur(m1, (11, 11), 0)#cv2.blur(m1, (11, 11))#
 
         Marker = cv2.add(Marker, cv2.bitwise_and(img, img, mask=m1))
 
