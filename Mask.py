@@ -16,19 +16,16 @@ mode = False
 # погрешность
 eps = 0
 
-
 # вычисляет min/max комполенты двых цветов-векторов
 def find_min_coomp(vec1, vec2):
     for i in range(len(vec1)):
         vec1[i] = min(vec1[i], vec2[i])
     return vec1
 
-
 def find_max_coomp(vec1, vec2):
     for i in range(len(vec1)):
         vec1[i] = max(vec1[i], vec2[i])
     return vec1
-
 
 # ищет два вектора цвета на маркере
 def find_all_colors(img):
@@ -46,8 +43,7 @@ def find_all_colors(img):
                     max_color[k] += eps
     return min_color, max_color
 
-
-def Scrolls(cap, min_color, max_color):
+def Scrolls(cap, min_color, max_color): #вствить выбор фильтра
     cv2.namedWindow("result")  # создаем главное окно
     cv2.namedWindow("settings")  # создаем окно настроек
 
@@ -58,6 +54,8 @@ def Scrolls(cap, min_color, max_color):
     cv2.createTrackbar('r_max', 'settings', max_color[0], 255, lambda x:x)
     cv2.createTrackbar('g_max', 'settings', max_color[1], 255, lambda x:x)
     cv2.createTrackbar('b_max', 'settings', max_color[2], 255, lambda x:x)
+
+    cv2.createTrackbar('blur_coef', 'settings', 5, 50, lambda x: x )
 
     while True:
         flag, imgtmp = cap.read()
@@ -71,13 +69,14 @@ def Scrolls(cap, min_color, max_color):
         s2 = cv2.getTrackbarPos('g_max', 'settings')
         v2 = cv2.getTrackbarPos('b_max', 'settings')
 
+        pixel_size = cv2.getTrackbarPos('blur_coef', 'settings')
         # формируем начальный и конечный цвет фильтра
         h_min = np.array((h1, s1, v1))
         h_max = np.array((h2, s2, v2))
 
         # накладываем фильтр на кадр
         filter = cv2.inRange(imgtmp, h_min, h_max)
-        filter = cv2.medianBlur(filter, 15)
+        filter = cv2.medianBlur(filter, 2*pixel_size+1) #cv2.GaussianBlur(filter, (11, 11), 0)#cv2.blur(filter, (11, 11))#cv2.medianBlur(filter, 15)
         trash = cv2.add(trash, cv2.bitwise_and(imgtmp, imgtmp, mask=filter))
 
         cv2.imshow('result', np.hstack([imgtmp, trash]))
@@ -86,9 +85,7 @@ def Scrolls(cap, min_color, max_color):
         if ch == 27:# wait for ESC key to exit|| хорошо бы "OK" найти какой-нибудь
             cv2.destroyWindow("result")
             cv2.destroyWindow("settings")
-            return [h1, s1, v1], [h2, s2, v2]
-
-
+            return [h1, s1, v1], [h2, s2, v2], [2*pixel_size+1]
 
 # это хорошо бы в мейн
 cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
@@ -128,17 +125,28 @@ while True:
         min_color = find_min_coomp(min_color, min_color1)
         max_color = find_max_coomp(max_color, max_color1)
         count_col += 1  # количество щёлчков
-        if count_col == 10:
+        if count_col == 3:
             mode = True
             # бегунки после калибровки для проверки тцут
-            min_color, max_color = Scrolls(cap, min_color, max_color)
+            min_color, max_color, pixel_size = Scrolls(cap, min_color, max_color)
 
     # режим рисования
     if mode:
-        # поиск в диапазоне цветов, тут можно сократить код
 
+        # поиск в диапазоне цветов, тут можно сократить код
         m1 = cv2.inRange(img, np.array(min_color), np.array(max_color))
-        m1 = cv2.medianBlur(m1, 15)
+        #Размытие:
+        # opencv имеются следующие основные методы размытия: averaging(усреднённое), gaussian(гауссово) и median(медианное)
+        # averaging(усреднённое) - это вычисление нового значения пикселя, при котором учитываются значения соседних пикселей.
+        # Ядро свёртки — это квадратная матрица, где пиксель в центре этой матрицы затем устанавливается как среднее значение всех других пикселей, окружающих его.
+
+        # Гауссово размытие похоже на предыдущее размытие, за исключением того, что вместо простого среднего мы теперь используем взвешенное среднее,
+        # где соседние пиксели, которые ближе к центральному пикселю, вносят больший «вклад» в среднее. Конечным результатом является то, что наше изображение размыто более естественно
+
+        #В медианном размытии центральный пиксель изображения заменяется медианой всех пикселей в области ядра, в результате чего это размытие наиболее эффективно при удалении шума в стиле «соли».
+
+
+        m1 = cv2.medianBlur(m1, pixel_size[0]) #cv2.GaussianBlur(m1, (11, 11), 0)#cv2.blur(m1, (11, 11))#
 
         Marker = cv2.add(Marker, cv2.bitwise_and(img, img, mask=m1))
 
