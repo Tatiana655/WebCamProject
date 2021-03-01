@@ -28,7 +28,7 @@ def find_max_coomp(vec1, vec2):
     return vec1
 
 # ищет два вектора цвета на маркере
-def find_all_colors(img):
+def find_all_colors(img, X, Y): #картинка и верхрий левый угол квадрата, в котором искать цвета
     min_color = [255, 255, 255]
     max_color = [0, 0, 0]
     # мне кажется, тут можно написать и короче
@@ -41,6 +41,40 @@ def find_all_colors(img):
                 max_color[k] = max(img[i][j][k], min_color[k])
                 if max_color[k] <= 255 - eps:
                     max_color[k] += eps
+    return min_color, max_color
+
+
+def Calibration(wimdow_name, cap):
+    min_color = [255, 255, 255]
+    max_color = [0, 0, 0]
+    i = 0
+    j = 0
+    count_col = 0
+    #for for for|| while while while
+    while (i < 2 and j < 2):
+        flag, imgtmp = cap.read()
+        for k in range(3):
+            start_point = (i* len(imgtmp[0]) + ((-1)**i)*(X - 1),j * len(imgtmp) +((-1)**j)*(Y - 1))
+            end_point = (start_point[0] + size + 1, start_point[1]  + size + 1)
+            color = (255, 0, 0)
+            thickness = 1
+
+            img = cv2.rectangle(imgtmp, start_point, end_point, color, thickness)
+            cv2.imshow(wimdow_name, imgtmp)
+
+            if cv2.waitKey(10) == ord('a'):
+                # найти макaсимальную разность цветов//вернуть 2 RGB//запихнуть в одну функцию-файл
+                min_color1, max_color1 = find_all_colors(img, start_point[0]+1, start_point[1]+1)#???
+                min_color = find_min_coomp(min_color, min_color1)
+                max_color = find_max_coomp(max_color, max_color1)
+                #много ифов для i j
+                count_col += 1  # количество щёлчков
+                if count_col % 3 == 0:
+                    j+=1
+                if count_col % 6 == 0:
+                    i+=1
+                    j-=2
+    #а может оно само ретурнётся и без ифа
     return min_color, max_color
 
 def Scrolls(cap, min_color, max_color):
@@ -136,13 +170,17 @@ while True:
     ret, img = cap.read()
     img = cv2.flip(img, 1)
 
-    start_point = (X - 1, Y - 1)
-    end_point = (X + size + 1, Y + size + 1)
-    color = (255, 0, 0)
-    thickness = 1
+
     Marker = np.zeros_like(img)
     # режим калибровки
     if not mode:#тут функция котороая возвращает два откалиброванных цвета и потом функция кидающая настройки
+
+      min_color, max_color = Calibration("WM", cap)
+      '''  start_point = (X - 1, Y - 1)
+        end_point = (X + size + 1, Y + size + 1)
+        color = (255, 0, 0)
+        thickness = 1
+
         img = cv2.rectangle(img, start_point, end_point, color, thickness)
         cv2.imshow("WM", img)
 
@@ -153,10 +191,10 @@ while True:
         max_color = find_max_coomp(max_color, max_color1)
         count_col += 1  # количество щёлчков
         if count_col == 3:
-            mode = True
+            mode = True'''
             # бегунки после калибровки для проверки тцут
-            min_color, max_color, filter_opt = Scrolls(cap, min_color, max_color)
-
+      min_color, max_color, filter_opt = Scrolls(cap, min_color, max_color)
+      mode = not mode
     # режим рисования
     if mode:
 
@@ -178,6 +216,7 @@ while True:
         # где соседние пиксели, которые ближе к центральному пикселю, вносят больший «вклад» в среднее. Конечным результатом является то, что наше изображение размыто более естественно
 
         #В медианном размытии центральный пиксель изображения заменяется медианой всех пикселей в области ядра, в результате чего это размытие наиболее эффективно при удалении шума в стиле «соли».
+
 #написать нормально (-_-)
         if filter_opt[1] == 0:
             m1 = cv2.medianBlur(m1, filter_opt[0]) #cv2.GaussianBlur(filter, (11, 11), 0)#cv2.blur(filter, (11, 11))#cv2.medianBlur(filter, 15)
@@ -194,14 +233,14 @@ while True:
         dM10 = moments['m10']
         dArea = moments['m00']
 
-        if dArea > 5:
+        if dArea > 5: #тут надо линии нарисовать
             x = int(dM10 / dArea)
             y = int(dM01 / dArea)
-            mask = cv2.circle(mask, (x, y), 5, (50, 100, 255), -1)
+            mask = cv2.circle(mask, (x, y), 5, (255, 255, 255), -1)
             Point = cv2.add(Point, mask)
 
         fgmask = fgbg.apply(Marker)
-        fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, kernel)
+        #fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, kernel)
 
         cv2.imshow("WM", np.hstack([img, Marker, Point]))
 
