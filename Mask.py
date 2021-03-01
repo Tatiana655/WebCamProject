@@ -55,9 +55,11 @@ def Scrolls(cap, min_color, max_color):
     cv2.createTrackbar('g_max', 'settings', max_color[1], 255, lambda x:x)
     cv2.createTrackbar('b_max', 'settings', max_color[2], 255, lambda x:x)
 
-    cv2.createTrackbar('filter_type', 'settings', 0, 2, lambda x: x)
+    cv2.createTrackbar('filter_type', 'settings', 1, 3, lambda x: x) # типа без фильтра
     cv2.createTrackbar('blur_coef', 'settings', 7, 50, lambda x: x )
 
+    cv2.createTrackbar('coef_rect_in', 'settings', 15, 50, lambda x: x)
+    cv2.createTrackbar('coef_rect_out', 'settings', 21, 50, lambda x: x)
     while True:
         flag, imgtmp = cap.read()
         imgtmp = cv2.flip(imgtmp, 1)
@@ -73,6 +75,8 @@ def Scrolls(cap, min_color, max_color):
         filter_type = cv2.getTrackbarPos('filter_type', 'settings') #мб тут что-то вроде енамов добавить или сета
         pixel_size = cv2.getTrackbarPos('blur_coef', 'settings')
 
+        rect_in = cv2.getTrackbarPos('coef_rect_in', 'settings')+1
+        rect_out = cv2.getTrackbarPos('coef_rect_out', 'settings')+1
         # формируем начальный и конечный цвет фильтра
         h_min = np.array((h1, s1, v1))
         h_max = np.array((h2, s2, v2))
@@ -88,16 +92,17 @@ def Scrolls(cap, min_color, max_color):
         # Таким образом, толщина или размер объекта переднего плана уменьшается, или просто уменьшается белая область на изображении.
         # Это полезно для удаления небольших белых шумов (как мы видели в главе о цветовом пространстве), отделения двух связанных объектов и т. Д.
 
-        st1 = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15), (-1, -1))
+#на самом деле я не знаю  помогает оно или нет:D
+        st1 = cv2.getStructuringElement(cv2.MORPH_RECT, (rect_in, rect_in), (-1, -1))
         st2 = cv2.getStructuringElement(cv2.MORPH_RECT, (21, 21), (-1, -1))
         filter= cv2.morphologyEx(filter, cv2.MORPH_CLOSE, st1)
         filter = cv2.morphologyEx(filter, cv2.MORPH_OPEN, st2)
 
-        if filter_type == 0:
-            filter = cv2.medianBlur(filter, 2*pixel_size+1) #cv2.GaussianBlur(filter, (11, 11), 0)#cv2.blur(filter, (11, 11))#cv2.medianBlur(filter, 15)
         if filter_type == 1:
-            filter = cv2.GaussianBlur(filter, (2*pixel_size+1, 2*pixel_size+1), 0)
+            filter = cv2.medianBlur(filter, 2*pixel_size+1) #cv2.GaussianBlur(filter, (11, 11), 0)#cv2.blur(filter, (11, 11))#cv2.medianBlur(filter, 15)
         if filter_type == 2:
+            filter = cv2.GaussianBlur(filter, (2*pixel_size+1, 2*pixel_size+1), 0)
+        if filter_type == 3:
             filter = cv2.blur(filter, (2*pixel_size+1, 2*pixel_size+1))
         trash = cv2.add(trash, cv2.bitwise_and(imgtmp, imgtmp, mask=filter))
 
