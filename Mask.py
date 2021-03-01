@@ -94,7 +94,7 @@ def Scrolls(cap, min_color, max_color):
 
 #на самом деле я не знаю  помогает оно или нет:D
         st1 = cv2.getStructuringElement(cv2.MORPH_RECT, (rect_in, rect_in), (-1, -1))
-        st2 = cv2.getStructuringElement(cv2.MORPH_RECT, (21, 21), (-1, -1))
+        st2 = cv2.getStructuringElement(cv2.MORPH_RECT, (rect_out, rect_out), (-1, -1))
         filter= cv2.morphologyEx(filter, cv2.MORPH_CLOSE, st1)
         filter = cv2.morphologyEx(filter, cv2.MORPH_OPEN, st2)
 
@@ -112,7 +112,7 @@ def Scrolls(cap, min_color, max_color):
         if ch == 27:# wait for ESC key to exit|| хорошо бы "OK" найти какой-нибудь
             cv2.destroyWindow("Main")
             cv2.destroyWindow("settings")
-            return [h1, s1, v1], [h2, s2, v2], [2*pixel_size+1, filter_type]
+            return [h1, s1, v1], [h2, s2, v2], [2*pixel_size+1, filter_type, rect_in, rect_out]
 
 # это хорошо бы в мейн
 cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
@@ -163,10 +163,10 @@ while True:
         # поиск в диапазоне цветов, тут можно сократить код
         m1 = cv2.inRange(img, np.array(min_color), np.array(max_color))
 
-        st1 = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15), (-1, -1))
+        st1 = cv2.getStructuringElement(cv2.MORPH_RECT, (filter_opt[2], filter_opt[2]), (-1, -1))
 
         m1 = cv2.morphologyEx(m1, cv2.MORPH_CLOSE, st1) #внутри
-        st2 = cv2.getStructuringElement(cv2.MORPH_RECT, (21, 21), (-1, -1))
+        st2 = cv2.getStructuringElement(cv2.MORPH_RECT, (filter_opt[3], filter_opt[3]), (-1, -1))
         m1 = cv2.morphologyEx(m1, cv2.MORPH_OPEN, st2) #снаружи
 
         #Размытие:
