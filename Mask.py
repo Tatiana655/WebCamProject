@@ -21,7 +21,6 @@ def find_min_coomp(vec1, vec2):
     for i in range(len(vec1)):
         vec1[i] = min(vec1[i], vec2[i])
     return vec1
-
 def find_max_coomp(vec1, vec2):
     for i in range(len(vec1)):
         vec1[i] = max(vec1[i], vec2[i])
@@ -42,7 +41,6 @@ def find_all_colors(img, X, Y): #картинка и верхрий левый �
                 if max_color[k] <= 255 - eps:
                     max_color[k] += eps
     return min_color, max_color
-
 
 def Calibration(wimdow_name, cap):
     min_color = [255, 255, 255]
@@ -176,22 +174,7 @@ while True:
     if not mode:#тут функция котороая возвращает два откалиброванных цвета и потом функция кидающая настройки
 
       min_color, max_color = Calibration("WM", cap)
-      '''  start_point = (X - 1, Y - 1)
-        end_point = (X + size + 1, Y + size + 1)
-        color = (255, 0, 0)
-        thickness = 1
-
-        img = cv2.rectangle(img, start_point, end_point, color, thickness)
-        cv2.imshow("WM", img)
-
-    if cv2.waitKey(10) == ord('a'):
-        # найти максимальную разность цветов//вернуть 2 RGB//запихнуть в одну функцию-файл
-        min_color1, max_color1 = find_all_colors(img)
-        min_color = find_min_coomp(min_color, min_color1)
-        max_color = find_max_coomp(max_color, max_color1)
-        count_col += 1  # количество щёлчков
-        if count_col == 3:
-            mode = True'''
+      
             # бегунки после калибровки для проверки тцут
       min_color, max_color, filter_opt = Scrolls(cap, min_color, max_color)
       mode = not mode
