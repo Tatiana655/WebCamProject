@@ -75,6 +75,7 @@ class Application:
         self.current_image = None  # current image from the camera
 
         self.root = tk.Tk()  # initialize root window
+        self.root.geometry("910x600")
         self.root.title("Non-contact stylus, alpha")  # set window title
         # self.destructor function gets fired when the window is closed
         self.root.protocol('WM_DELETE_WINDOW', self.destructor)
@@ -83,8 +84,8 @@ class Application:
         self.panel.pack(padx=10, pady=10,side='left')
 
         # create a button, that when pressed, will take the current frame and save it to file
-        btn_start = tk.Button(self.root, text="START", command=self.reading) # тут кнопки, бегунки? мб через глобальные переменные
-        btn_start.pack( side='left', padx=10, pady=10)
+        btn_start = tk.Button(self.root, text="Click to START", command=self.reading) # тут кнопки, бегунки? мб через глобальные переменные
+        btn_start.pack( padx=10, pady=10, ipadx=900, ipady=600)
         Application.button.append(btn_start)
         Application.button.append(tk.Button(self.root, text="CLICK ME!", command=self.counter))
         Application.button.append(tk.Button(self.root, text="NEXT", command=self.point)) # тут кнопки, бегунки? мб через глобальные переменные
