@@ -9,6 +9,7 @@ import datetime
 import cv2
 import os
 import numpy as np
+import pyautogui
 
 MODE = "NOTHING", "READING", "MOVING", "DRAWING"
 # можно что-то вроде enum
@@ -24,6 +25,8 @@ SHIFT = 100  # ВНИМАНИЕ: болванка
 mode = False
 # погрешность
 eps = 0
+
+
 
 
 # потом убрать в отдкльный файл // типа модуль калибровки
@@ -60,8 +63,10 @@ def find_all_colors(img, x, y):  # картинка и верхрий левый
 # То что выше в отдельный файл
 
 def event_info(event):  # кидай отключение мышки
-    Application.Mode = MODE[0]
+    Application.reading(Application)
 
+def event_click(event):
+    Application.move(Application)
 
 class Application:
     Mode = MODE[0]
@@ -91,6 +96,10 @@ class Application:
         self.panel = tk.Label(self.root)  # initialize image panel
         self.panel.pack(padx=10, pady=10, side='left')
 
+        # инфа про размер экрана
+        self.screen_width = self.root.winfo_screenwidth()
+        self.screen_height = self.root.winfo_screenheight()
+
         # create a button, that when pressed, will take the current frame and save it to file
         btn_start = tk.Button(self.root, text="Click to START",
                               command=self.reading)  # тут кнопки, бегунки? мб через глобальные переменные
@@ -103,7 +112,12 @@ class Application:
         Application.button.append(tk.Button(self.root, text="ON|OFF", command=self.move))
 
         # press ord
-        self.root.bind('a', event_info)
+        self.root.bind('c', event_info)
+        self.root.bind('C', event_info)
+        self.root.bind('с', event_info)
+        self.root.bind('С', event_info)
+
+        self.root.bind('d', event_click)
 
         # create a scrolls and labels
         Application.Scroll.append(tk.Scale(self.root, length=255, orient='horizontal', from_=0, to=255))
@@ -141,23 +155,22 @@ class Application:
     def video_loop(self):
         """ Get frame from the video stream and show it in Tkinter """
         ok, frame = self.vs.read()  # read frame from video stream
-        if cv2.waitKey(10) == ord('a'):
-            Application.Mode = MODE[0]
+
         if ok:  # frame captured without any errors
             frame = cv2.flip(frame, 1)
-            # frame = cv2.rectangle(frame, (X,Y), (X+20,Y+20), (255,0,0,), 1)
+
             x_new = X
             y_new = Y
             # рисование квадратов
             if Application.Mode == MODE[1]:  # reading
                 if 3 <= Application.count_click < 6:
-                    x_new = X + SHIFT  # ВНИМАНИЕ: болванка
+                    x_new = len(frame[0]) - X   # ВНИМАНИЕ: болванка
                 if 6 <= Application.count_click < 9:
                     x_new = X
-                    y_new = Y + SHIFT
+                    y_new = len(frame) - Y
                 if Application.count_click >= 9:
-                    x_new = X + SHIFT
-                    y_new = Y + SHIFT
+                    x_new = len(frame[0]) - X
+                    y_new = len(frame) - Y
                 frame = cv2.rectangle(frame, (x_new - 1, y_new - 1), (x_new + 20 + 1, y_new + 20 + 1), (255, 0, 0,), 1)
                 # доп настройка
                 if Application.count_click == 12:
@@ -195,12 +208,19 @@ class Application:
                     x = int(dM10 / dArea)
                     y = int(dM01 / dArea)
                     frame = cv2.circle(frame, (x, y), 5, (255, 0, 255), -1)
+                    x_screen = x * self.screen_width / len(frame[0])
+                    y_screen = y * self.screen_height / len(frame)
+                    pyautogui.moveTo(x_screen, y_screen)
+                    if Application.flag:
+                        pyautogui.mouseDown()
+
 
             if Application.Mode == MODE[1] and Application.count_click == 12:
                 cv2image = cv2.cvtColor(cv2.bitwise_and(frame, frame, mask=filter), cv2.COLOR_BGR2RGBA)
                 # cv2image = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGBA)
             else:
                 cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)  # convert colors from BGR to RGBA
+
             self.current_image = Image.fromarray(cv2image)  # convert image for PIL
             imgtk = ImageTk.PhotoImage(image=self.current_image)  # convert image for tkinter
             self.panel.imgtk = imgtk  # anchor imgtk so it does not be deleted by garbage-collector
@@ -253,13 +273,19 @@ class Application:
             Application.button[1].pack_forget()
 
     def move(self):
-        Application.flag = true
+        Application.flag = True
 
     def reading(self):
         Application.Mode = MODE[1]
         Application.count_click = 0
         Application.button[0].pack_forget()
+        Application.button[2].pack_forget()
         Application.button[3].pack_forget()
+        Application.button[4].pack_forget()
+        for s in Application.Scroll:
+            s.pack_forget()
+        for lab in Application.label:
+            lab.pack_forget()
         Application.button[1].pack(side='left', padx=10, pady=10)
 
     def destructor(self):
