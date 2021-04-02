@@ -3,18 +3,13 @@
 # temp
 size = 20  # ребро квадрата-считывателя
 # асположение квадрата
-X = 200
-Y = 100
 
 def find_min_coomp(vec1, vec2):
     for i in range(len(vec1)):
         vec1[i] = min(vec1[i], vec2[i])
     return vec1
 
-# потом убрать в отдкльный файл // типа модуль калибровки
-# вычисляет min/max комполенты двых цветов-векторов
-
-
+# вычисляет min/max комполенты двух цветов-векторов
 
 def find_max_coomp(vec1, vec2):
     for i in range(len(vec1)):
@@ -37,3 +32,9 @@ def find_all_colors(img, x, y):  # картинка и верхрий левый
                 if max_color[k] <= 255 - 0:
                     max_color[k] += 0
     return min_color, max_color
+
+def find_finger(img,x_n,y_n,w,h):
+    for i in range(y_n,y_n + h,1):
+        for j in range(x_n,x_n + w,1):
+            if img[i][j] == 255:
+                return  j,i

@@ -154,6 +154,18 @@ class Application:
                     filter = cv2.morphologyEx(filter, cv2.MORPH_CLOSE, st1)
                     filter = cv2.morphologyEx(filter, cv2.MORPH_OPEN, st2)
                     filter = cv2.medianBlur(filter, 2 * Application.coef_data[0] + 1)
+                    contours, hierarchy = cv2.findContours(filter.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+                    for c in contours:
+                        if cv2.contourArea(c) > 200:
+                            x_n, y_n, w, h = cv2.boundingRect(c)
+                            if (x_n != 0) and (y_n != 0):
+                                x, y = Calib.find_finger(filter, x_n, y_n, w, h)
+                                filter  = cv2.circle(filter,(x,y),5,100,-1)
+                        if cv2.contourArea(c) < 200:
+                            #print(cv2.contourArea(c))
+                            for el in c:
+                                for cor in el:
+                                    filter[cor[1],cor[0]] = 0
                     frame = filter
 
             # получение координат и "отрисовка" линии # тут надо связываться с Пэинтом
@@ -172,12 +184,24 @@ class Application:
                 dM01 = moments['m01']
                 dM10 = moments['m10']
                 dArea = moments['m00']
+                contours, hierarchy = cv2.findContours(filter.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
                 if dArea > 5:  # рисование или другой экшн // тут надо связываться с пэинтом
-                    x = int(dM10 / dArea)
-                    y = int(dM01 / dArea)
-                    Application.filter_point = cv2.circle(Application.filter_point, (x, y),self.paint.get_size(), self.paint.get_color(), -1)
+                    x = -1#int(dM10 / dArea)
+                    y = -1#int(dM01 / dArea)
+                    for c in contours:
+                        if cv2.contourArea(c) > 200:
+                            x_n, y_n, w, h = cv2.boundingRect(c)
+                            if (x_n !=0) and (y_n !=0):
+                                x,y = Calib.find_finger(filter, x_n, y_n, w,h)
+                        if cv2.contourArea(c) <= 200:
+                            #print(cv2.contourArea(c))
+                            for el in c:
+                                for cor in el:
+                                    filter[cor[1],cor[0]] = 0
+                    if (x !=-1) and (y !=-1):
+                        Application.filter_point = cv2.circle(Application.filter_point, (x, y),self.paint.get_size(), self.paint.get_color(), -1)
 
-                    frame = cv2.add(frame, Application.filter_point)
+                frame = cv2.add(frame, Application.filter_point)
                     # движение курсора
                     # x_screen = x * self.screen_width / len(frame[0])
                     # y_screen = y * self.screen_height / len(frame)
