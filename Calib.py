@@ -1,4 +1,4 @@
-
+import cv2
 
 # temp
 size = 20  # ребро квадрата-считывателя
@@ -38,3 +38,12 @@ def find_finger(img,x_n,y_n,w,h):
         for j in range(x_n,x_n + w,1):
             if img[i][j] == 255:
                 return  j,i
+
+def find_max_cont(contours):
+    maxArea = max([cv2.contourArea(c) for c in contours])
+    #print(maxArea)
+    if maxArea < 3000:
+        return []
+    for c in contours:
+        if cv2.contourArea(c) == maxArea:
+            return c

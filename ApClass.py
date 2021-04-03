@@ -14,7 +14,7 @@ NOTHING = "NOTHING"
 READING = "READING"
 MOVING = "MOVING"
 DRAWING = "DRAWING"
-#доступные режимы (в питоне нет enum:( )
+# доступные режимы (в питоне нет enum:( )
 MODE = {NOTHING: 0, READING: 1, MOVING: 2, DRAWING: 3}
 
 # temp
@@ -23,17 +23,17 @@ size = 20  # ребро квадрата-считывателя
 X = 200
 Y = 100
 SHIFT = 100
+SEP = 3000
 
-#реакция на резкий переход на чтение при нажатии С на клавиатуре
+# реакция на резкий переход на чтение при нажатии С на клавиатуре
 def event_info(event):
-    Application.reading()
-
+    Application.reading(Application)
 
 class Application:
     # состояние системы
     cur_mode = MODE[NOTHING]
     count_click = 0  # количество кликов для читалки (цвета с квадрата)
-    coef_data = [7, 15, 21]  # blur_coef - 0  # open_coef - 1 # close_coef - 2 # всегда нечётные
+    coef_data = [3, 7, 7]  # blur_coef - 0  # open_coef - 1 # close_coef - 2 # всегда нечётные
     min_color = [255, 255, 255] #bgr
     max_color = [0, 0, 0] #bgr
     button = []  # кнопки сисетмы-приложения
@@ -50,17 +50,20 @@ class Application:
         self.current_image = None  # current image from the camera
         ok, frame = self.vs.read() # reading opencv
         Application.filter_point = np.zeros_like(frame) # start saving picture
+        # size of picture
+        self.picture_height = len(frame)
+        self.picture_weight = len(frame[0])
 
         self.root = tk.Tk()  # initialize root window
         self.root.geometry("910x600") # size of window
-        self.root.title("alpha")  # set window title
+        self.root.title("beta")  # set window title
         # self.destructor function gets fired when the window is closed
         self.root.protocol('WM_DELETE_WINDOW', self.destructor)  # destroy behavior
 
         self.panel = tk.Label(self.root)  # initialize image panel
         self.panel.pack(padx=10, pady=10, side='left') # show panel
 
-        # size of window
+        # size of window display
         self.screen_width = self.root.winfo_screenwidth()
         self.screen_height = self.root.winfo_screenheight()
 
@@ -126,7 +129,7 @@ class Application:
             y_new = Y
             # рисование квадратов-читальщиков (для пользователя, но чтение в reading'e)
             if Application.cur_mode == MODE[READING]:  # reading
-                if 3 <= Application.count_click < 6:
+                '''if 3 <= Application.count_click < 6:
                     x_new = len(frame[0]) - X
                 if 6 <= Application.count_click < 9:
                     x_new = X
@@ -134,7 +137,16 @@ class Application:
                 if Application.count_click >= 9:
                     x_new = len(frame[0]) - X
                     y_new = len(frame) - Y
-                frame = cv2.rectangle(frame, (x_new - 1, y_new - 1), (x_new + 20 + 1, y_new + 20 + 1), (255, 0, 0,), 1)
+                frame = cv2.rectangle(frame, (100,100), (x_new + 20 + 1, y_new + 20 + 1), (255, 0, 0), 1)'''
+
+                if Application.count_click < 12:
+                    x = self.picture_weight // 2 - size // 2 - size * 2
+                    y = self.picture_height // 2 - size // 2 - size * 2
+                    for i in range(0,6,2):
+                        for j in range(0,6,2):
+                            frame = cv2.rectangle(frame,(x-1 + i * size ,y-1 + j * size), (x+1 + (i+1) * size ,y+1 + (j+1) * size), (255,0,0,),1)
+                #frame = cv2.rectangle(frame, (x - 1 , y - 1 ),
+                                      #(x + 1 + (6) * size, y + 1 + (6) * size), (255, 0, 0), 1)
                 # доп настройка # наложение фильтра
                 if Application.count_click == 12:
                     Application.min_color = [Application.scroll[0].get(), Application.scroll[1].get(),
@@ -155,17 +167,15 @@ class Application:
                     filter = cv2.morphologyEx(filter, cv2.MORPH_OPEN, st2)
                     filter = cv2.medianBlur(filter, 2 * Application.coef_data[0] + 1)
                     contours, hierarchy = cv2.findContours(filter.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-                    for c in contours:
-                        if cv2.contourArea(c) > 200:
-                            x_n, y_n, w, h = cv2.boundingRect(c)
+                    #найти контур с наибольшей площадью и в этом прямоугольнике искать
+                    if (len(contours)> 0):
+                        max_cont = Calib.find_max_cont(contours)
+                        if len(max_cont)>0:
+                            x_n, y_n, w, h = cv2.boundingRect(max_cont)
                             if (x_n != 0) and (y_n != 0):
                                 x, y = Calib.find_finger(filter, x_n, y_n, w, h)
-                                filter  = cv2.circle(filter,(x,y),5,100,-1)
-                        if cv2.contourArea(c) < 200:
-                            #print(cv2.contourArea(c))
-                            for el in c:
-                                for cor in el:
-                                    filter[cor[1],cor[0]] = 0
+                                if (abs(h-w)>=w//5*3):
+                                    filter = cv2.circle(filter, (x, y), 5, 100, -1)
                     frame = filter
 
             # получение координат и "отрисовка" линии # тут надо связываться с Пэинтом
@@ -188,17 +198,14 @@ class Application:
                 if dArea > 5:  # рисование или другой экшн // тут надо связываться с пэинтом
                     x = -1#int(dM10 / dArea)
                     y = -1#int(dM01 / dArea)
-                    for c in contours:
-                        if cv2.contourArea(c) > 200:
-                            x_n, y_n, w, h = cv2.boundingRect(c)
-                            if (x_n !=0) and (y_n !=0):
-                                x,y = Calib.find_finger(filter, x_n, y_n, w,h)
-                        if cv2.contourArea(c) <= 200:
-                            #print(cv2.contourArea(c))
-                            for el in c:
-                                for cor in el:
-                                    filter[cor[1],cor[0]] = 0
-                    if (x !=-1) and (y !=-1):
+                    # найти контур с наибольшей площадью и в этом прямоугольнике искать
+                    max_cont = Calib.find_max_cont(contours)
+                    if len(max_cont)>0:
+                        x_n, y_n, w, h = cv2.boundingRect(max_cont)
+                        if (x_n != 0) and (y_n != 0):
+                            x, y = Calib.find_finger(filter, x_n, y_n, w, h)
+                            #filter = cv2.circle(filter, (x, y), 5, 100, -1)
+                    if (x !=-1) and (y !=-1) and (abs(h-w) >= w//5*3):
                         Application.filter_point = cv2.circle(Application.filter_point, (x, y),self.paint.get_size(), self.paint.get_color(), -1)
 
                 frame = cv2.add(frame, Application.filter_point)
@@ -215,7 +222,7 @@ class Application:
             else:
                 cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)  # convert colors from BGR to RGBA
 
-            # перевод координат ЦВЕТА и рисование
+            # перевод координат ЦВЕТА и рисование в окно
             self.current_image = Image.fromarray(cv2image)  # convert image for PIL
             imgtk = ImageTk.PhotoImage(image=self.current_image)  # convert image for tkinter
             self.panel.imgtk = imgtk  # anchor imgtk so it does not be deleted by garbage-collector
@@ -240,9 +247,9 @@ class Application:
 
     def counting(self):
         Application.count_click += 1
-        y_new = Y
+        '''y_new = Y
         x_new = X
-        # тут ещё считывание цветов надо запихнуть
+        # тут считывание цветов
         if 3 <= Application.count_click < 6:
             x_new = X + SHIFT  # ВНИМАНИЕ: болванка
         if 6 <= Application.count_click < 9:
@@ -257,7 +264,20 @@ class Application:
 
         min_color1, max_color1 = Calib.find_all_colors(frame, x_new + 1, y_new + 1)  # ???
         Application.min_color = Calib.find_min_coomp(Application.min_color, min_color1)
-        Application.max_color = Calib.find_max_coomp(Application.max_color, max_color1)
+        Application.max_color = Calib.find_max_coomp(Application.max_color, max_color1)'''
+
+        ok, frame = self.vs.read()
+        frame = cv2.flip(frame, 1)
+        # считывание цвета
+        x = self.picture_weight//2 - size//2 - size * 2
+        y = self.picture_height//2 - size//2 - size * 2
+
+        for i in range(0,6,2):
+            for j in range(0,6,2):
+                min_color1, max_color1 = Calib.find_all_colors(frame, x + i * size, y + j * size)  # ???
+                Application.min_color = Calib.find_min_coomp(Application.min_color, min_color1)
+                Application.max_color = Calib.find_max_coomp(Application.max_color, max_color1)
+        Application.count_click = 12
         # доп настройка
         if Application.count_click == 12:
             for i in range(3):
