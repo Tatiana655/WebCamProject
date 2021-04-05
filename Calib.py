@@ -34,10 +34,42 @@ def find_all_colors(img, x, y):  # картинка и верхрий левый
     return min_color, max_color
 
 def find_finger(img,x_n,y_n,w,h):
+    #print(contur)
+    rect = img[x_n:x_n+w, y_n:y_n+h]
+
+    x_up = [-1,-1]
+    x_right = [-1,-1]
+    x_left = [-1,-1]
+    # поиск верхней точки контура в прямоугольнике
     for i in range(y_n,y_n + h,1):
         for j in range(x_n,x_n + w,1):
+            if img[j][i] == 255:
+                x_up = [j,i]
+                break
+    #поиск левой и правой выбор максимальной по у. Длина высоны и основания
+    for i in range(x_n,x_n + w,1):
+        for j in range(y_n,y_n + h,1):
             if img[i][j] == 255:
-                return  j,i
+                x_left = [i,j]
+                break
+
+    for i in range(x_n + w,x_n,-1):
+        for j in range(y_n,y_n + h,1):
+            if img[i][j] == 255:
+                x_right = [i,j]
+                break
+    if x_right != [-1, -1] and x_left!= [-1, -1] :
+        if x_right[1] > x_left[1]:
+            opt = x_right
+        else:
+            opt = x_left
+
+        hig = abs(opt[1] - x_up[1])
+        wig = abs(opt[0] - x_up[0])
+        if hig / wig > 1:
+            return x_up[0], x_up[1]
+    return -1, -1
+
 
 def find_max_cont(contours):
     maxArea = max([cv2.contourArea(c) for c in contours])

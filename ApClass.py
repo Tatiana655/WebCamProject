@@ -14,9 +14,12 @@ NOTHING = "NOTHING"
 READING = "READING"
 MOVING = "MOVING"
 DRAWING = "DRAWING"
-# доступные режимы (в питоне нет enum:( )
+# доступные режимы
 MODE = {NOTHING: 0, READING: 1, MOVING: 2, DRAWING: 3}
-
+# режимы калибровки
+ANY = "ANY"
+HAND = "HAND"
+CALIB = {ANY: 0, HAND:1}
 # temp
 size = 20  # ребро квадрата-считывателя
 # расположение квадрата
@@ -31,9 +34,10 @@ def event_info(event):
 
 class Application:
     # состояние системы
-    cur_mode = MODE[NOTHING]
+    cur_mode = MODE[NOTHING] #екуущий режим
+    cur_calib = CALIB[ANY]
     count_click = 0  # количество кликов для читалки (цвета с квадрата)
-    coef_data = [3, 7, 7]  # blur_coef - 0  # open_coef - 1 # close_coef - 2 # всегда нечётные
+    coef_data = [1, 1, 1]  # blur_coef - 0  # open_coef - 1 # close_coef - 2 # всегда нечётные
     min_color = [255, 255, 255] #bgr
     max_color = [0, 0, 0] #bgr
     button = []  # кнопки сисетмы-приложения
@@ -74,6 +78,7 @@ class Application:
         Application.button.append(tk.Button(self.root, text="CLICK ME!", command=self.counting))  # сччтает клики СLICK_ME
         Application.button.append(tk.Button(self.root, text="NEXT",command=self.moving))  # меняет состояние на рисование|движение. Тот самый пэинт в общем-то
         Application.button.append(tk.Button(self.root, text="RESTART", command=self.reading))  # меняет состояние на чтение-калибровку
+        Application.button.append(tk.Button(self.root, text="CHANGE_CALIB", command=self.change_calib))
 
         # кнопка отмены, о которой забыли сообщить пользоввателю. Потом напиши
         self.root.bind('c' or 'C' or 'с' or 'С', event_info)
@@ -110,6 +115,9 @@ class Application:
         Application.info_label.append(tk.Label(self.root,
                                                text="Place the marker object\nin the area of the square\n and click the button.\nSRUARE changes position\n(12 button clicks)",
                                                font=20))
+        Application.info_label.append(tk.Label(self.root,
+                                               text="Put your hand \n(mb in the glove)\nin the area of the squares\n and click the button.\n(1 button click)",
+                                               font=20))
         #инит пэинта
         self.paint = Paint.Paint()
         self.paint.init(self.root)
@@ -129,24 +137,25 @@ class Application:
             y_new = Y
             # рисование квадратов-читальщиков (для пользователя, но чтение в reading'e)
             if Application.cur_mode == MODE[READING]:  # reading
-                '''if 3 <= Application.count_click < 6:
-                    x_new = len(frame[0]) - X
-                if 6 <= Application.count_click < 9:
-                    x_new = X
-                    y_new = len(frame) - Y
-                if Application.count_click >= 9:
-                    x_new = len(frame[0]) - X
-                    y_new = len(frame) - Y
-                frame = cv2.rectangle(frame, (100,100), (x_new + 20 + 1, y_new + 20 + 1), (255, 0, 0), 1)'''
+                if Application.cur_calib == CALIB[ANY]:
+                    if 3 <= Application.count_click < 6:
+                        x_new = len(frame[0]) - X
+                    if 6 <= Application.count_click < 9:
+                        x_new = X
+                        y_new = len(frame) - Y
+                    if Application.count_click >= 9:
+                        x_new = len(frame[0]) - X
+                        y_new = len(frame) - Y
+                    frame = cv2.rectangle(frame, (x_new-1,y_new-1), (x_new + size + 1, y_new + size + 1), (255, 0, 0), 1)
 
-                if Application.count_click < 12:
-                    x = self.picture_weight // 2 - size // 2 - size * 2
-                    y = self.picture_height // 2 - size // 2 - size * 2
-                    for i in range(0,6,2):
-                        for j in range(0,6,2):
-                            frame = cv2.rectangle(frame,(x-1 + i * size ,y-1 + j * size), (x+1 + (i+1) * size ,y+1 + (j+1) * size), (255,0,0,),1)
-                #frame = cv2.rectangle(frame, (x - 1 , y - 1 ),
-                                      #(x + 1 + (6) * size, y + 1 + (6) * size), (255, 0, 0), 1)
+                if Application.cur_calib == CALIB[HAND]:
+                    if Application.count_click < 12:
+                        x = self.picture_weight // 2 - size // 2 - size * 2
+                        y = self.picture_height // 2 - size // 2 - size * 2
+                        for i in range(0,6,2):
+                            for j in range(0,9,3):
+                                frame = cv2.rectangle(frame,(x-1 + i * size ,y-1 + j * size), (x+1 + (i+1) * size ,y+1 + (j+1) * size), (255,0,0,),1)
+
                 # доп настройка # наложение фильтра
                 if Application.count_click == 12:
                     Application.min_color = [Application.scroll[0].get(), Application.scroll[1].get(),
@@ -171,10 +180,12 @@ class Application:
                     if (len(contours)> 0):
                         max_cont = Calib.find_max_cont(contours)
                         if len(max_cont)>0:
+                            cnt = max_cont[0]
+                            cv2.drawContours(filter, [max_cont], 0, (100, 100, 100), 3)
                             x_n, y_n, w, h = cv2.boundingRect(max_cont)
                             if (x_n != 0) and (y_n != 0):
-                                x, y = Calib.find_finger(filter, x_n, y_n, w, h)
-                                if (abs(h-w)>=w//5*3):
+                                x, y = Calib.find_finger( filter, x_n, y_n, w, h)
+                                if (h/w>1.4):
                                     filter = cv2.circle(filter, (x, y), 5, 100, -1)
                     frame = filter
 
@@ -203,9 +214,13 @@ class Application:
                     if len(max_cont)>0:
                         x_n, y_n, w, h = cv2.boundingRect(max_cont)
                         if (x_n != 0) and (y_n != 0):
-                            x, y = Calib.find_finger(filter, x_n, y_n, w, h)
+                            if Application.cur_calib == CALIB[HAND]:
+                                x, y = Calib.find_finger(filter, x_n, y_n, w, h)
+                            if Application.cur_calib == CALIB[ANY]:
+                                x = x_n + w//2
+                                y = y_n + h//2
                             #filter = cv2.circle(filter, (x, y), 5, 100, -1)
-                    if (x !=-1) and (y !=-1) and (abs(h-w) >= w//5*3):
+                    if (x !=-1) and (y !=-1) :
                         Application.filter_point = cv2.circle(Application.filter_point, (x, y),self.paint.get_size(), self.paint.get_color(), -1)
 
                 frame = cv2.add(frame, Application.filter_point)
@@ -236,7 +251,9 @@ class Application:
         Application.cur_mode = MODE[MOVING]
         Application.button[1].pack_forget()
         Application.button[2].pack_forget()
+        Application.button[4].pack_forget()
         Application.info_label[0].pack_forget()
+        Application.info_label[1].pack_forget()
         Application.button[3].pack( padx=10, pady=10)
 
         for s in Application.scroll:
@@ -247,37 +264,36 @@ class Application:
 
     def counting(self):
         Application.count_click += 1
-        '''y_new = Y
-        x_new = X
-        # тут считывание цветов
-        if 3 <= Application.count_click < 6:
-            x_new = X + SHIFT  # ВНИМАНИЕ: болванка
-        if 6 <= Application.count_click < 9:
+        ok, frame = self.vs.read()
+        frame = cv2.flip(frame, 1)
+        # цветовая читалка
+        if Application.cur_calib == CALIB[ANY]:
+            y_new = Y
             x_new = X
-            y_new = Y + SHIFT
-        if Application.count_click >= 9:
-            x_new = X + SHIFT
-            y_new = Y + SHIFT
+            # тут считывание цветов
+            if 3 <= Application.count_click < 6:
+                x_new = self.picture_weight - X  # ВНИМАНИЕ: болванка
+            if 6 <= Application.count_click < 9:
+                x_new = X
+                y_new = self.picture_height - Y
+            if Application.count_click >= 9:
+                x_new = self.picture_weight - X
+                y_new = self.picture_height - Y
 
-        ok, frame = self.vs.read()
-        frame = cv2.flip(frame, 1)
+            min_color1, max_color1 = Calib.find_all_colors(frame, x_new + 1, y_new + 1)  # ???
+            Application.min_color = Calib.find_min_coomp(Application.min_color, min_color1)
+            Application.max_color = Calib.find_max_coomp(Application.max_color, max_color1)
 
-        min_color1, max_color1 = Calib.find_all_colors(frame, x_new + 1, y_new + 1)  # ???
-        Application.min_color = Calib.find_min_coomp(Application.min_color, min_color1)
-        Application.max_color = Calib.find_max_coomp(Application.max_color, max_color1)'''
+        if Application.cur_calib == CALIB[HAND]:
+            x = self.picture_weight//2 - size//2 - size * 2
+            y = self.picture_height//2 - size//2 - size * 2
 
-        ok, frame = self.vs.read()
-        frame = cv2.flip(frame, 1)
-        # считывание цвета
-        x = self.picture_weight//2 - size//2 - size * 2
-        y = self.picture_height//2 - size//2 - size * 2
-
-        for i in range(0,6,2):
-            for j in range(0,6,2):
-                min_color1, max_color1 = Calib.find_all_colors(frame, x + i * size, y + j * size)  # ???
-                Application.min_color = Calib.find_min_coomp(Application.min_color, min_color1)
-                Application.max_color = Calib.find_max_coomp(Application.max_color, max_color1)
-        Application.count_click = 12
+            for i in range(0,6,2):
+                for j in range(0,9,3):
+                    min_color1, max_color1 = Calib.find_all_colors(frame, x + i * size, y + j * size)  # ???
+                    Application.min_color = Calib.find_min_coomp(Application.min_color, min_color1)
+                    Application.max_color = Calib.find_max_coomp(Application.max_color, max_color1)
+            Application.count_click = 12
         # доп настройка
         if Application.count_click == 12:
             for i in range(3):
@@ -290,16 +306,29 @@ class Application:
             Application.button[2].pack(side='left', padx=1, pady=1)
             Application.button[1].pack_forget()
             Application.info_label[0].pack_forget()
+            Application.info_label[1].pack_forget()
+            Application.button[4].pack_forget()
 
 
     def reading(self):
         Application.cur_mode = MODE[READING]
         Application.count_click = 0
-        Application.info_label[0].pack(side='top')
+        Application.button[1].pack(side='top', padx=10, pady=10)
+        Application.button[4].pack(side='top', padx=10, pady=10)
+
+        if Application.cur_calib == CALIB[ANY]:
+            Application.info_label[1].pack_forget()
+            Application.info_label[0].pack(side = "left")
+
+        if Application.cur_calib == CALIB[HAND]:
+            Application.info_label[0].pack_forget()
+            Application.info_label[1].pack(side = "left")
+
 
         Application.button[0].pack_forget()
         Application.button[2].pack_forget()
         Application.button[3].pack_forget()
+
         self.paint.hide_buts()
 
         # Application.button[4].pack_forget()
@@ -307,7 +336,24 @@ class Application:
             s.pack_forget()
         for lab in Application.label:
             lab.pack_forget()
-        Application.button[1].pack(side='left', padx=10, pady=10)
+
+
+    def change_calib(self):
+        if Application.cur_calib == CALIB[ANY]:
+            Application.cur_calib = CALIB[HAND]
+        else:
+            Application.cur_calib = CALIB[ANY]
+
+        if Application.cur_calib == CALIB[ANY]:
+            Application.info_label[1].pack_forget()
+            Application.info_label[0].pack(side = "left")
+
+        if Application.cur_calib == CALIB[HAND]:
+            Application.info_label[0].pack_forget()
+            Application.info_label[1].pack(side = "left")
+
+
+
 
     def destructor(self):
         """ Destroy the root object and release all resources """
