@@ -6,7 +6,7 @@ import tkinter as tk
 
 import cv2
 import numpy as np
-import Calib
+import Reading
 import Paint
 
 # объявление констант (в питоне нельзя их в отдельный файл вынести:( )
@@ -19,7 +19,7 @@ MODE = {NOTHING: 0, READING: 1, MOVING: 2, DRAWING: 3}
 # режимы калибровки
 ANY = "ANY"
 HAND = "HAND"
-CALIB = {ANY: 0, HAND:1}
+READ_MODE = {ANY: 0, HAND:1}
 # temp
 size = 20  # ребро квадрата-считывателя
 # расположение квадрата
@@ -35,9 +35,9 @@ def event_info(event):
 class Application:
     # состояние системы
     cur_mode = MODE[NOTHING] #екуущий режим
-    cur_calib = CALIB[ANY]
+    cur_calib = READ_MODE[ANY]
     count_click = 0  # количество кликов для читалки (цвета с квадрата)
-    coef_data = [1, 1, 1]  # blur_coef - 0  # open_coef - 1 # close_coef - 2 # всегда нечётные
+    coef_data = [3, 3, 3]  # blur_coef - 0  # open_coef - 1 # close_coef - 2 # всегда нечётные
     min_color = [255, 255, 255] #bgr
     max_color = [0, 0, 0] #bgr
     button = []  # кнопки сисетмы-приложения
@@ -116,7 +116,7 @@ class Application:
                                                text="Place the marker object\nin the area of the square\n and click the button.\nSRUARE changes position\n(12 button clicks)",
                                                font=20))
         Application.info_label.append(tk.Label(self.root,
-                                               text="Put your hand \n(mb in the glove)\nin the area of the squares\n and click the button.\n(1 button click)",
+                                               text="Put your hand\n(mb in the glove)\nin the area of the squares\n and click the button.\n(1 button click)",
                                                font=20))
         #инит пэинта
         self.paint = Paint.Paint()
@@ -137,7 +137,7 @@ class Application:
             y_new = Y
             # рисование квадратов-читальщиков (для пользователя, но чтение в reading'e)
             if Application.cur_mode == MODE[READING]:  # reading
-                if Application.cur_calib == CALIB[ANY]:
+                if Application.cur_calib == READ_MODE[ANY]:
                     if 3 <= Application.count_click < 6:
                         x_new = len(frame[0]) - X
                     if 6 <= Application.count_click < 9:
@@ -148,7 +148,7 @@ class Application:
                         y_new = len(frame) - Y
                     frame = cv2.rectangle(frame, (x_new-1,y_new-1), (x_new + size + 1, y_new + size + 1), (255, 0, 0), 1)
 
-                if Application.cur_calib == CALIB[HAND]:
+                if Application.cur_calib == READ_MODE[HAND]:
                     if Application.count_click < 12:
                         x = self.picture_weight // 2 - size // 2 - size * 2
                         y = self.picture_height // 2 - size // 2 - size * 2
@@ -178,13 +178,13 @@ class Application:
                     contours, hierarchy = cv2.findContours(filter.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
                     #найти контур с наибольшей площадью и в этом прямоугольнике искать
                     if (len(contours)> 0):
-                        max_cont = Calib.find_max_cont(contours)
+                        max_cont = Reading.find_max_cont(contours)
                         if len(max_cont)>0:
                             cnt = max_cont[0]
                             cv2.drawContours(filter, [max_cont], 0, (100, 100, 100), 3)
                             x_n, y_n, w, h = cv2.boundingRect(max_cont)
                             if (x_n != 0) and (y_n != 0):
-                                x, y = Calib.find_finger( filter, x_n, y_n, w, h)
+                                x, y = Reading.find_finger(filter, x_n, y_n, w, h)
                                 if (h/w>1.4):
                                     filter = cv2.circle(filter, (x, y), 5, 100, -1)
                     frame = filter
@@ -210,13 +210,13 @@ class Application:
                     x = -1#int(dM10 / dArea)
                     y = -1#int(dM01 / dArea)
                     # найти контур с наибольшей площадью и в этом прямоугольнике искать
-                    max_cont = Calib.find_max_cont(contours)
+                    max_cont = Reading.find_max_cont(contours)
                     if len(max_cont)>0:
                         x_n, y_n, w, h = cv2.boundingRect(max_cont)
                         if (x_n != 0) and (y_n != 0):
-                            if Application.cur_calib == CALIB[HAND]:
-                                x, y = Calib.find_finger(filter, x_n, y_n, w, h)
-                            if Application.cur_calib == CALIB[ANY]:
+                            if Application.cur_calib == READ_MODE[HAND]:
+                                x, y = Reading.find_finger(filter, x_n, y_n, w, h)
+                            if Application.cur_calib == READ_MODE[ANY]:
                                 x = x_n + w//2
                                 y = y_n + h//2
                             #filter = cv2.circle(filter, (x, y), 5, 100, -1)
@@ -267,7 +267,7 @@ class Application:
         ok, frame = self.vs.read()
         frame = cv2.flip(frame, 1)
         # цветовая читалка
-        if Application.cur_calib == CALIB[ANY]:
+        if Application.cur_calib == READ_MODE[ANY]:
             y_new = Y
             x_new = X
             # тут считывание цветов
@@ -280,19 +280,19 @@ class Application:
                 x_new = self.picture_weight - X
                 y_new = self.picture_height - Y
 
-            min_color1, max_color1 = Calib.find_all_colors(frame, x_new + 1, y_new + 1)  # ???
-            Application.min_color = Calib.find_min_coomp(Application.min_color, min_color1)
-            Application.max_color = Calib.find_max_coomp(Application.max_color, max_color1)
+            min_color1, max_color1 = Reading.find_all_colors(frame, x_new + 1, y_new + 1)  # ???
+            Application.min_color = Reading.find_min_coomp(Application.min_color, min_color1)
+            Application.max_color = Reading.find_max_coomp(Application.max_color, max_color1)
 
-        if Application.cur_calib == CALIB[HAND]:
+        if Application.cur_calib == READ_MODE[HAND]:
             x = self.picture_weight//2 - size//2 - size * 2
             y = self.picture_height//2 - size//2 - size * 2
 
             for i in range(0,6,2):
                 for j in range(0,9,3):
-                    min_color1, max_color1 = Calib.find_all_colors(frame, x + i * size, y + j * size)  # ???
-                    Application.min_color = Calib.find_min_coomp(Application.min_color, min_color1)
-                    Application.max_color = Calib.find_max_coomp(Application.max_color, max_color1)
+                    min_color1, max_color1 = Reading.find_all_colors(frame, x + i * size, y + j * size)  # ???
+                    Application.min_color = Reading.find_min_coomp(Application.min_color, min_color1)
+                    Application.max_color = Reading.find_max_coomp(Application.max_color, max_color1)
             Application.count_click = 12
         # доп настройка
         if Application.count_click == 12:
@@ -316,11 +316,11 @@ class Application:
         Application.button[1].pack(side='top', padx=10, pady=10)
         Application.button[4].pack(side='top', padx=10, pady=10)
 
-        if Application.cur_calib == CALIB[ANY]:
+        if Application.cur_calib == READ_MODE[ANY]:
             Application.info_label[1].pack_forget()
             Application.info_label[0].pack(side = "left")
 
-        if Application.cur_calib == CALIB[HAND]:
+        if Application.cur_calib == READ_MODE[HAND]:
             Application.info_label[0].pack_forget()
             Application.info_label[1].pack(side = "left")
 
@@ -339,16 +339,16 @@ class Application:
 
 
     def change_calib(self):
-        if Application.cur_calib == CALIB[ANY]:
-            Application.cur_calib = CALIB[HAND]
+        if Application.cur_calib == READ_MODE[ANY]:
+            Application.cur_calib = READ_MODE[HAND]
         else:
-            Application.cur_calib = CALIB[ANY]
+            Application.cur_calib = READ_MODE[ANY]
 
-        if Application.cur_calib == CALIB[ANY]:
+        if Application.cur_calib == READ_MODE[ANY]:
             Application.info_label[1].pack_forget()
             Application.info_label[0].pack(side = "left")
 
-        if Application.cur_calib == CALIB[HAND]:
+        if Application.cur_calib == READ_MODE[HAND]:
             Application.info_label[0].pack_forget()
             Application.info_label[1].pack(side = "left")
 
@@ -364,6 +364,9 @@ class Application:
             b.destroy()
         for lab in Application.label:
             lab.destroy()
+        for info in Application.info_label:
+            info.destroy()
+
         self.paint.destructor()
 
         print("[INFO] closing...")
