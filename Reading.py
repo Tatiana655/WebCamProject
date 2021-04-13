@@ -33,4 +33,4 @@ def find_all_colors(img, x, y):  # картинка и верхний левый
     return min_color, max_color
 
 # the end of the code
-# Заключение.
+
