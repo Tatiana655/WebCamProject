@@ -4,7 +4,8 @@ import ApClass
 import cv2
 
 from tkinter import filedialog as fd
-#константы
+# константы (Декорации к другой сцене)
+
 RED = "RED"
 ORANGE = "ORANGE"
 YELLOW = "YELLOW"
@@ -46,15 +47,18 @@ def save():
 
 class Paint:
 
+  # Главные герои:
     button = []
     color = WHITE
     size = 5
 
-    @staticmethod # вспомогательная функция добавления кнопок
+    @staticmethod
+    # вспомогательная функция добавления кнопок
     def easy_add(root, color):
         Paint.button.append(tk.Button(root, command=lambda: set_color(color), width=2, height=1, bg=COLORS[color]))
 
     @staticmethod
+    #создай
     def init(root):
         for c in COLOR_LIST:
             Paint.easy_add(root, c)
@@ -64,6 +68,7 @@ class Paint:
         Paint.button.append(tk.Button(root, command=lambda: save(), text='SAVE', font=16))
 
     @staticmethod
+    #уничтожь
     def destructor():
         for b in Paint.button:
             b.destroy()
@@ -81,14 +86,20 @@ class Paint:
             but.pack_forget()
 
     @staticmethod
+    #дай цвет
     def get_color():
         return COLORS_RES[Paint.color]
 
     @staticmethod
+    #дай сайз
     def get_size():
         return Paint.size
 
-# написанный ниже комментарий не обладает смысловой ценностью для понимания кода (поэтому и написан в конце)
+#go to Coord.py
+
+# написанный ниже комментарий не обладает смысловой ценностью для понимания кода (поэтому и написан в конце),
+# а так же не является действующей частью (просто мысли недовольного автора) и при прочтении может быть пропущен
+
 #в начале тут ещё были сеттеры и геттеры как в плюсах, но было принято решение писать как на питоне (поменять семантику)
 #т.к. 1)надо один стиль
 #     2)нельзя писать в питоне как на плюсах

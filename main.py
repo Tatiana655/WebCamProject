@@ -2,6 +2,10 @@
 import argparse
 import ApClass
 
+# Вступление.
+# Начало Конец
+# Кульминация драмы
+# бегут за тобой :D
 
 if __name__ == "__main__":
     # construct the argument parse and parse the arguments
@@ -12,5 +16,7 @@ if __name__ == "__main__":
 
     # start the app
     print("[INFO] starting...")
-    pba = ApClass.Application(args["output"])
+    pba = ApClass.Application()
     pba.root.mainloop()
+
+# go to ApClass.py
