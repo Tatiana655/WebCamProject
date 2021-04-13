@@ -3,9 +3,7 @@ import argparse
 import ApClass
 
 # Вступление.
-# Начало Конец
-# Кульминация драмы
-# бегут за тобой :D
+
 
 if __name__ == "__main__":
     # construct the argument parse and parse the arguments
