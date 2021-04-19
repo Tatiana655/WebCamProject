@@ -6,6 +6,7 @@ import numpy as np
 import Paint
 import ImgTransform
 import Coord
+import Definitions as Def
 
 # объявление констант (Декорации)
 NOTHING = "NOTHING"
@@ -16,22 +17,20 @@ DRAWING = "DRAWING"
 # доступные режимы
 MODE = {NOTHING: 0, READING: 1, MOVING: 2, DRAWING: 3}
 
-# режимы калибровки
-ANY = "ANY"
-HAND = "HAND"
-READ_MODE = {ANY: 0, HAND: 1}
+ANY = Def.ANY
+HAND = Def.HAND
+READ_MODE = Def.READ_MODE
 
-size = 20  # ребро квадрата-считывателя
+size = Def.size  # ребро квадрата-считывателя
 
 # расположение квадрата
-X = 200
-Y = 100
-SHIFT = 100
-SEP = 3000
+X = Def.X
+Y = Def.Y
+SHIFT = Def.SHIFT
 
 # переменные для параметризации кода
-PRINT = "PRINT"
-READ = "READ"
+PRINT = Def.PRINT
+READ = Def.READ
 
 
 class Application:
@@ -136,7 +135,7 @@ class Application:
 
         if ok:  # frame captured without any errors
             frame = cv2.flip(frame, 1)
-
+            filter = np.zeros_like(frame)
             # рисовани квадратов, потом настройка скроллами
             if Application.cur_mode == MODE[READING]:
                 # рисование квадратов
@@ -158,7 +157,7 @@ class Application:
                     # приметение фильтров
                     filter = ImgTransform.get_filtered_img(frame)
                     # получение актуальных координат точки-маркера
-                    x, y = Coord.getCoord(filter, Application.cur_calib)
+                    x, y = Coord.get_coord(filter, Application.cur_calib)
                     if (x != -1) and (y != -1):
                         filter = cv2.circle(filter, (x, y), 5, 100, -1)
                     frame = filter
@@ -168,7 +167,7 @@ class Application:
                 # применение фильтров
                 filter = ImgTransform.get_filtered_img(frame)
                 # Самый главный экшен, который тут только может быть (рисование)
-                x, y = Coord.getCoord(filter, Application.cur_calib)
+                x, y = Coord.get_coord(filter, Application.cur_calib)
                 if (x != -1) and (y != -1):
                     Application.filter_point = cv2.circle(Application.filter_point, (x, y), self.paint.get_size(),
                                                           self.paint.get_color(), -1)
@@ -179,6 +178,7 @@ class Application:
             if Application.cur_mode == MODE[READING] and Application.count_click == 12:
                 # в режиме настройки покаывает, что видит фильтр
                 # показвает достаточно ли хорошо ослеп
+
                 cv2image = cv2.cvtColor(cv2.bitwise_and(frame, frame, mask=filter), cv2.COLOR_BGR2RGBA)
             else:
                 cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)  # convert colors from BGR to RGBA
@@ -212,8 +212,6 @@ class Application:
         self.paint.show_buts()
 
     # считывание диапазона цветов с картинки, согл. режиму и включение доп. настройки со скроллами
-    # Этот метод даёт команду системе:
-    # Почитай немного, а потом можешь позвать склоллов поиграть
     def counting(self):
         Application.count_click += 1
         ok, frame = self.vs.read()
@@ -246,8 +244,6 @@ class Application:
             Application.button[4].pack_forget()
 
     # Тут изменение системы для отображения квадратов-читальщиков
-    # Этот метод даёт команду системе:
-    # забудь всё что было и нарисуй мне квадраты-читальщики
     def reading(self):
         Application.cur_mode = MODE[READING]
         Application.count_click = 0
@@ -273,8 +269,6 @@ class Application:
             lab.pack_forget()
 
     # Тут изменение системы для отображения конкретного вида квадратов-читальщиков
-    # Этот метод даёт команду системе:
-    # НЕ забудь всё что было и просто поменяй вид квадратов-читальщиков
     @staticmethod
     def change_calib():
         if Application.cur_calib == READ_MODE[ANY]:
@@ -291,8 +285,6 @@ class Application:
             Application.info_label[1].pack(side="left")
 
     # Тут изменение системы для того чтобы всё закончилось хорошо (все умерли в один день (и за один раз))
-    # Этот метод даёт команду системе:
-    # всем пора на покой (в любом случае выбора у вас нет)
     def destructor(self):
         """ Destroy the root object and release all resources """
         # освободить ресурсы
@@ -307,9 +299,9 @@ class Application:
 
         self.paint.destructor()
 
-        print("[INFO] closing...")
+        #print("[INFO] closing...")
         self.root.destroy()
         self.vs.release()  # release web camera
         cv2.destroyAllWindows()
 
-#go to Coord.py
+# go to Coord.py

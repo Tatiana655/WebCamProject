@@ -1,84 +1,84 @@
 import cv2
+import numpy as np
+import Definitions as Def
+from sklearn.metrics import pairwise
 
-# (не)профессиональный надор функций для вычисления координат маркера
+ANY = Def.ANY
+HAND = Def.HAND
+READ_MODE = Def.READ_MODE
 
-# старые знакомые декорации
-ANY = "ANY"
-HAND = "HAND"
-READ_MODE = {ANY: 0, HAND: 1}
 
 # найди максимальный контур
 def find_max_cont(contours):
     if len(contours) == 0:
         return []
     maxArea = max([cv2.contourArea(c) for c in contours])
-    #print(maxArea)
+    # print(maxArea)
     if maxArea < 3000:
         return []
     for c in contours:
         if cv2.contourArea(c) == maxArea:
             return c
 
+
 # дай пж координаты пальца, если можешь
-def find_finger(img,x_n,y_n,w,h):
-    #print(contur)
-    rect = img[x_n:x_n+w, y_n:y_n+h]
-    x_up = [-1,-1]
-    x_right = [-1,-1]
-    x_left = [-1,-1]
-    # поиск верхней точки контура в прямоугольнике
-    for i in range(y_n,y_n + h-2,1):
-        for j in range(x_n,x_n + w-2,1):
-            if img[i][j] == 255:
-                x_up = [i,j]
-                break
-    #поиск левой и правой выбор максимальной по у. Длина высоты и основания
-    for i in range(x_n,min(x_n + w - 2,len(img[0])) ,1):
-        for j in range(y_n,min(y_n + h - 2,len(img)),1):
-            if img[j][i] == 255:
-                x_left = [j,i]
-                break
+def find_finger(img, max_cont):
+    conv_hull = cv2.convexHull(max_cont)
+    top = tuple(conv_hull[conv_hull[:, :, 1].argmin()][0])
+    bottom = tuple(conv_hull[conv_hull[:, :, 1].argmax()][0])
+    left = tuple(conv_hull[conv_hull[:, :, 0].argmin()][0])
+    right = tuple(conv_hull[conv_hull[:, :, 0].argmax()][0])
+    cx = (left[0] + right[0]) // 2  # тут посмотри потом
+    cy = (top[1] + bottom[1]) // 2
 
-    for i in range(x_n + w-2,x_n,-1):
-        for j in range(y_n,y_n + h-2,1):
-            if img[j][i] == 255:
-                x_right = [j,i]
-                break
-    #выбираем максимально высокий
-    if x_right != [-1, -1] and x_left!= [-1, -1] :
-        if x_right[1] > x_left[1]:
-            opt = x_right
-        else:
-            opt = x_left
+    dist = pairwise.euclidean_distances([left, right, bottom, top], [[cx, cy]])[0]
+    radi = int(0.80 * dist)
 
-        hig = abs(opt[1] - x_up[1])
-        wig = abs(opt[0] - x_up[0])
-        if hig / wig >= 1:# если >=45 верну как есть, меньше, то не дам
-            return x_up[0], x_up[1]
+    circular_roi = np.zeros_like(img, dtype='uint8')
+    cv2.circle(circular_roi, (cx, cy), radi, 255, 8)
+
+    img2 = img.copy()
+    mask = cv2.bitwise_and(img2, img2, mask=circular_roi)
+    # mask
+    con, hie = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    count = 0
+    circumfrence = 2 * np.pi * radi
+    for cnt in con:
+        (m_x, m_y, m_w, m_h) = cv2.boundingRect(cnt)
+        out_wrist_range = (cy + (cy * 0.25)) > (m_y + m_h)
+        limit_pts = (circumfrence * 0.25) > cnt.shape[0]
+        if limit_pts and out_wrist_range:
+            # print(limit_pts,out_wrist_range)
+            count += 1
+    for cnt in con:
+        (m_x, m_y, m_w, m_h) = cv2.boundingRect(cnt)
+        out_wrist_range = (cy + (cy * 0.25)) > (m_y + m_h)
+        limit_pts = (circumfrence * 0.25) > cnt.shape[0]
+        if limit_pts and out_wrist_range:
+            # print(limit_pts,out_wrist_range)
+            count += 1
+    print(count)
+    if count <= 3:
+        return top[0], top[1]
+
     return -1, -1
 
-# дай координаты, если можешь, если нет дай (-1, -1)
-def getCoord(img,calibr_mode):
+
+# дай координаты, если можешь, если нет, дай (-1, -1)
+def get_coord(img, calibr_mode):
     x = -1
     y = -1
     contours, hierarchy = cv2.findContours(img.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     # найти контур с наибольшей площадью и в этом прямоугольнике искать
     max_cont = find_max_cont(contours)
-    if len(max_cont) > 0:
+    if len(max_cont) > 0 and cv2.contourArea(max_cont) > 5000:
         x_n, y_n, w, h = cv2.boundingRect(max_cont)
         if (x_n != 0) and (y_n != 0):
             if calibr_mode == READ_MODE[HAND]:
-                x, y = find_finger(img, x_n, y_n, w, h)
+                x, y = find_finger(img, max_cont)
             if calibr_mode == READ_MODE[ANY]:
                 x = x_n + w // 2
                 y = y_n + h // 2
-    return x,y
+    return x, y
 
-#go to ImgTransform.py
-
-# написанный ниже комментарий не обладает смысловой ценностью для понимания кода (поэтому и написан в конце),
-# а так же не является действующей частью (просто мысли недовольного автора) и при прочтении может быть пропущен
-
-# У меня создаётся впечатление, что всё что тут написано это набор систулек и погремушей (Дейкстра).
-# "А имеет ли это отношение к процессу решения задачи, а не к самой задаче?"
-# Возможно, что это уже совсем не ТО САМОЕ программирование
+# go to ImgTransform.py

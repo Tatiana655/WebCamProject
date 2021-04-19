@@ -3,22 +3,22 @@ import numpy as np
 
 import ApClass
 import Reading
+import Definitions as Def
 
-# старые знакомые декорации
+# старые знакомые
 # ребро квадрата
-size = 20
+size = Def.size
 
 # расположение квадрата
-X = 200
-Y = 100
-SHIFT = 100
+X = Def.X
+Y = Def.Y
+SHIFT = Def.SHIFT
 
-PRINT = "PRINT"
-READ = "READ"
+PRINT = Def.PRINT
+READ = Def.READ
 
 
 # Примениние кучи фильтров к картинке и возврат белого пятна
-# Команда: ослепи меня, но не сильно
 def get_filtered_img(img):
     filter = cv2.inRange(img, np.array(ApClass.Application.min_color), np.array(ApClass.Application.max_color))
     st1 = cv2.getStructuringElement(cv2.MORPH_RECT, (ApClass.Application.coef_data[1],
@@ -31,7 +31,7 @@ def get_filtered_img(img):
     return filter
 
 
-# ПАРАМЕТРИЗАЦИЯ кода для чтения и рисования в режиме ANY
+# чтение и рисование в режиме ANY
 def do_any(print_read, frame):
     width = len(frame[0])
     height = len(frame)
@@ -54,7 +54,7 @@ def do_any(print_read, frame):
         ApClass.Application.max_color = Reading.find_max_coomp(ApClass.Application.max_color, max_color1)
 
 
-# ПАРАМЕТРИЗАЦИЯ кода для чтения и рисования в режиме HAND
+# чтение и рисование в режиме HAND
 def do_hand(print_read, frame):
     if ApClass.Application.count_click < 12:
         x = len(frame[0]) // 2 - size // 2 - size * 2
@@ -64,7 +64,7 @@ def do_hand(print_read, frame):
             for j in range(0, 9, 3):
                 if print_read == PRINT:
                     img = cv2.rectangle(img, (x - 1 + i * size, y - 1 + j * size),
-                                        (x + 1 + (i + 1) * size, y + 1 + (j + 1) * size), (255, 0, 0,), 1)
+                                        (x + 1 + (i + 1) * size, y + 1 + (j + 1) * size), (255, 255, 255,), 1)
 
                 if print_read == READ:
                     min_color1, max_color1 = Reading.find_all_colors(frame, x + i * size, y + j * size)
@@ -74,12 +74,4 @@ def do_hand(print_read, frame):
         if print_read == PRINT:
             return img
 
-#go to Reading.py (last file)
-
-# написанный ниже комментарий не обладает смысловой ценностью для понимания кода (поэтому и написан в конце),
-# а так же не является действующей частью (просто мысли недовольного автора) и при прочтении может быть пропущен
-
-# параметризация, параметризация, параметризация. Она то она, да не совсем
-# в данном контексте имеется ввиду упрощение в виде применеие разного блока-набора функций по одному геометрическому положению
-# вообще было бы круто отправить не параметр-число, а параметр-функцию, но в данном случае усложнит читаемость да и понятность кода.
-# поэтому параметризация такая какая она есть (Это больше такая метафора параметризации на самом деле)
+# go to Reading.py (last file)

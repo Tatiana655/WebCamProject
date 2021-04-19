@@ -1,7 +1,5 @@
-# уже совсем потрёпанные декорации (всё что от них осталось)
-# Я тут подумала, можно уже и класс констант создать, чтобы такого не было
-size = 20  # ребро квадрата-считывателя
 
+size = 20  # ребро квадрата-считывателя
 
 def find_min_coomp(vec1, vec2):
     for i in range(len(vec1)):
@@ -9,7 +7,7 @@ def find_min_coomp(vec1, vec2):
     return vec1
 
 
-# вычисляет min/max комполенты двух цветов-векторов
+# вычисляет min/max компоненты двух цветов-векторов
 def find_max_coomp(vec1, vec2):
     for i in range(len(vec1)):
         vec1[i] = max(vec1[i], vec2[i])
@@ -33,4 +31,3 @@ def find_all_colors(img, x, y):  # картинка и верхний левый
     return min_color, max_color
 
 # the end of the code
-

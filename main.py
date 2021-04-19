@@ -1,19 +1,15 @@
-
-import argparse
+# import argparse
 import ApClass
-
-# Вступление.
-
 
 if __name__ == "__main__":
     # construct the argument parse and parse the arguments
-    ap = argparse.ArgumentParser()
-    ap.add_argument("-o", "--output", default="./",
-                    help="path to output directory to store snapshots (default: current folder")
-    args = vars(ap.parse_args())
+    #ap = argparse.ArgumentParser()
+    #ap.add_argument("-o", "--output", default="./",
+    #                help="path to output directory to store snapshots (default: current folder")
+    #args = vars(ap.parse_args())
 
     # start the app
-    print("[INFO] starting...")
+    # print("[INFO] starting...")
     pba = ApClass.Application()
     pba.root.mainloop()
 
