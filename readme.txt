@@ -1,5 +1,4 @@
 Схема:
-
    ApClass.py -- Paint
           |        |
       Coord.py   ImgTransform.py
