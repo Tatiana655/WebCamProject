@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from numba import jit
 
 import ApClass
 import Reading
@@ -19,6 +20,7 @@ READ = Def.READ
 
 
 # Примениние кучи фильтров к картинке и возврат белого пятна
+@jit
 def get_filtered_img(img):
     filter = cv2.inRange(img, np.array(ApClass.Application.min_color), np.array(ApClass.Application.max_color))
     st1 = cv2.getStructuringElement(cv2.MORPH_RECT, (ApClass.Application.coef_data[1],
@@ -32,6 +34,7 @@ def get_filtered_img(img):
 
 
 # чтение и рисование в режиме ANY
+@jit
 def do_any(print_read, frame):
     width = len(frame[0])
     height = len(frame)
@@ -47,7 +50,7 @@ def do_any(print_read, frame):
         y_new = height - Y
     if print_read == PRINT:
         return cv2.rectangle(frame, (x_new - 1, y_new - 1), (x_new + size + 1, y_new + size + 1),
-                             (255, 0, 0), 1)
+                             (255, 255, 255), 1)
     if print_read == READ:
         min_color1, max_color1 = Reading.find_all_colors(frame, x_new + 1, y_new + 1)
         ApClass.Application.min_color = Reading.find_min_coomp(ApClass.Application.min_color, min_color1)

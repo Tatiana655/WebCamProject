@@ -23,6 +23,8 @@ def find_max_cont(contours):
 
 # дай пж координаты пальца, если можешь
 def find_finger(img, max_cont):
+    #fr = img
+    #fr = cv2.drawContours(fr,max_cont,-1,100,3)
     conv_hull = cv2.convexHull(max_cont)
     top = tuple(conv_hull[conv_hull[:, :, 1].argmin()][0])
     bottom = tuple(conv_hull[conv_hull[:, :, 1].argmax()][0])
@@ -31,9 +33,18 @@ def find_finger(img, max_cont):
     cx = (left[0] + right[0]) // 2  # тут посмотри потом
     cy = (top[1] + bottom[1]) // 2
 
+    #fr = cv2.circle(fr, (top[0], top[1]), 10, 100, 5)
+    #fr = cv2.circle(fr, (bottom[0], bottom[1]), 10, 100, 5)
+    #fr = cv2.circle(fr, (left[0], left[1]), 10, 100, 5)
+    #fr = cv2.circle(fr, (right[0], right[1]), 10, 100, 5)
+    #fr = cv2.circle(fr,(cx,cy),5,200,5)
+
     dist = pairwise.euclidean_distances([left, right, bottom, top], [[cx, cy]])[0]
     radi = int(0.80 * dist)
-
+    #fr = cv2.circle(fr, (cx, cy), int(dist), 200, 5)
+    #fr = cv2.circle(fr, (cx, cy), radi, 200, 5)
+    #cv2.imwrite("fr.png", fr)
+    #cv2.imwrite("frimg.png", img)
     circular_roi = np.zeros_like(img, dtype='uint8')
     cv2.circle(circular_roi, (cx, cy), radi, 255, 8)
 
@@ -79,6 +90,11 @@ def get_coord(img, calibr_mode):
             if calibr_mode == READ_MODE[ANY]:
                 x = x_n + w // 2
                 y = y_n + h // 2
+                #cv2.imwrite("img.png",img)
+                #fr = img
+                #fr = cv2.circle(fr,(x,y),5,100)
+                #fr = cv2.rectangle(fr,(x_n, y_n),(x_n + w, y_n + h),100,3)
+                #cv2.imwrite("imgRect.png", fr)
     return x, y
 
 # go to ImgTransform.py
